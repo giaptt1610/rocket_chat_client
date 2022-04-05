@@ -1,15 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
-
 import 'package:flutter/cupertino.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:flutter/material.dart';
-import 'package:websocket_channel/auth_result.dart';
-import 'package:websocket_channel/room.dart';
-import 'package:websocket_channel/page_2.dart';
+import 'package:websocket_channel/test_pick_files.dart';
 import 'package:websocket_channel/ws_message.dart';
 import 'package:http/http.dart' as http;
 
+import 'auth_result.dart';
+import 'room.dart';
 import 'user.dart';
 
 void main() => runApp(const MyApp());
@@ -80,79 +79,88 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Form(
-            //   child: TextFormField(
-            //     controller: _controller,
-            //     decoration: const InputDecoration(labelText: 'Send a message'),
-            //   ),
-            // ),
-            // const SizedBox(height: 24),
-            authResult == null
-                ? TextButton(
-                    onPressed: () {
-                      _login('giaptt.hust', '123456').then((value) {
-                        setState(() {
-                          authResult = value;
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Form(
+              //   child: TextFormField(
+              //     controller: _controller,
+              //     decoration: const InputDecoration(labelText: 'Send a message'),
+              //   ),
+              // ),
+              // const SizedBox(height: 24),
+              authResult == null
+                  ? TextButton(
+                      onPressed: () {
+                        _login('giaptt.hust', '123456').then((value) {
+                          setState(() {
+                            authResult = value;
+                          });
                         });
+                      },
+                      child: Text('login'))
+                  : TextButton(
+                      onPressed: () {
+                        if (_session.isNotEmpty) {
+                          _channel.sink.add(
+                              WsMessage.loginRequest(authResult!.authToken));
+                          _channel.sink.add(
+                              WsMessage.streamNotifyUser(authResult!.userId));
+                        }
+                      },
+                      child: Text('subscription')),
+              TextButton(
+                  onPressed: () {
+                    _getListRoom(authResult!.authToken, authResult!.userId)
+                        .then((value) {
+                      setState(() {
+                        _listRooms = value;
                       });
-                    },
-                    child: Text('login'))
-                : TextButton(
-                    onPressed: () {
-                      if (_session.isNotEmpty) {
-                        _channel.sink
-                            .add(WsMessage.loginRequest(authResult!.authToken));
-                        _channel.sink.add(WsMessage.streamNotifyUser(
-                            _session, authResult!.authToken));
-                      }
-                    },
-                    child: Text('subscription')),
-            TextButton(
-                onPressed: () {
-                  _getListRoom(authResult!.authToken, authResult!.userId)
-                      .then((value) {
-                    setState(() {
-                      _listRooms = value;
                     });
-                  });
-                },
-                child: Text('get room')),
-            // StreamBuilder(
-            //   stream: wsEventStream.stream,
-            //   builder: (context, snapshot) {
-            //     return Text(snapshot.hasData ? '${snapshot.data}' : '');
-            //   },
-            // ),
-            SizedBox(height: 10.0),
-            Container(
-              constraints: BoxConstraints(
-                maxHeight: 300,
-                minHeight: 150,
-              ),
-              child: ListView.builder(
-                itemCount: _listRooms.length,
-                itemBuilder: (context, index) => Card(
-                  child: ListTile(
-                    title: Text('${_listRooms[index].name}'),
-                    onTap: () {},
+                  },
+                  child: Text('get room')),
+              SizedBox(height: 10.0),
+              Container(
+                constraints: const BoxConstraints(
+                  maxHeight: 300,
+                  // minHeight: 150,
+                ),
+                child: ListView.builder(
+                  itemCount: _listRooms.length,
+                  itemBuilder: (context, index) => Card(
+                    child: ListTile(
+                      title: Row(
+                        children: [
+                          Expanded(child: Text('${_listRooms[index].name}')),
+                          IconButton(
+                              onPressed: () {
+                                _channel.sink.add(
+                                    WsMessage.unSubStreamRoomMessage(
+                                        _listRooms[index].id));
+                              },
+                              icon: Icon(Icons.remove))
+                        ],
+                      ),
+                      onTap: () {
+                        _channel.sink.add(
+                            WsMessage.streamRoomMessage(_listRooms[index].id));
+                      },
+                    ),
                   ),
                 ),
               ),
-            ),
-            // TextButton(
-            //     onPressed: () {
-            //       Navigator.push(
-            //           context,
-            //           CupertinoPageRoute(
-            //               builder: (context) => Page2(
-            //                     stream: wsEventStream.stream,
-            //                   )));
-            //     },
-            //     child: Text('Page 2')),
-          ],
+
+              TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                        context,
+                        CupertinoPageRoute(
+                            builder: (context) => TestPickFile()));
+                  },
+                  child: Text('Test Pick File')),
+            ],
+          ),
         ),
       ),
       // floatingActionButton: FloatingActionButton(
@@ -187,6 +195,9 @@ class _MyHomePageState extends State<MyHomePage> {
         setState(() {
           _session = map['session'];
         });
+      } else if (map['msg'] == 'changed' &&
+          map['collection'] == 'stream-room-messages') {
+        final args = map['args'] as List;
       }
     } catch (e) {
       print('--- ${e.toString()}');

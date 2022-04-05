@@ -35,12 +35,28 @@ class WsMessage {
     });
   }
 
-  static String streamNotifyUser(String uniqueId, String userId) {
+  static String streamNotifyUser(String userId) {
     return jsonEncode({
       "msg": "sub",
-      "id": uniqueId,
+      "id": "$userId subscription-id",
       "name": "stream-notify-user",
       "params": ["$userId/event", false]
+    });
+  }
+
+  static String streamRoomMessage(String roomId) {
+    return jsonEncode({
+      "msg": "sub",
+      "id": roomId + "subscription-id",
+      "name": "stream-room-messages",
+      "params": [roomId, false]
+    });
+  }
+
+  static String unSubStreamRoomMessage(String roomId) {
+    return jsonEncode({
+      "msg": "unsub",
+      "id": roomId + "subscription-id",
     });
   }
 }

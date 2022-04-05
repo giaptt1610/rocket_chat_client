@@ -1,3 +1,5 @@
+import 'u.dart';
+
 class Room {
   final String id;
 
@@ -55,13 +57,4 @@ class Room {
         'ts': ts,
         '_updatedAt': updatedAt,
       };
-}
-
-class U {
-  final String id;
-  final String username;
-
-  U.fromMap(Map<String, dynamic> map)
-      : id = map['_id'],
-        username = map['username'];
 }
