@@ -5,8 +5,8 @@ import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:flutter/material.dart';
 import 'package:websocket_channel/test_pick_files.dart';
 import 'package:websocket_channel/ws_message.dart';
-import 'package:http/http.dart' as http;
 
+import 'apis.dart';
 import 'auth_result.dart';
 import 'room.dart';
 import 'user.dart';
@@ -41,7 +41,6 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  static const HOST = 'localhost:3000';
   static const WS_URL = 'ws://localhost:3000/websocket';
 
   final TextEditingController _controller = TextEditingController();
@@ -51,6 +50,7 @@ class _MyHomePageState extends State<MyHomePage> {
   AuthResult? authResult;
 
   List<Room> _listRooms = [];
+  Map<String, int> _unreadMsg = {};
 
   @override
   void initState() {
@@ -93,7 +93,7 @@ class _MyHomePageState extends State<MyHomePage> {
               authResult == null
                   ? TextButton(
                       onPressed: () {
-                        _login('giaptt.hust', '123456').then((value) {
+                        Apis.login('giaptt.hust', '123456').then((value) {
                           setState(() {
                             authResult = value;
                           });
@@ -105,17 +105,20 @@ class _MyHomePageState extends State<MyHomePage> {
                         if (_session.isNotEmpty) {
                           _channel.sink.add(
                               WsMessage.loginRequest(authResult!.authToken));
-                          _channel.sink.add(
-                              WsMessage.streamNotifyUser(authResult!.userId));
+                          // _channel.sink.add(
+                          //     WsMessage.streamNotifyUser(authResult!.userId));
                         }
                       },
                       child: Text('subscription')),
               TextButton(
                   onPressed: () {
-                    _getListRoom(authResult!.authToken, authResult!.userId)
+                    Apis.getListRoom(authResult!.authToken, authResult!.userId)
                         .then((value) {
                       setState(() {
                         _listRooms = value;
+                        _listRooms.forEach((room) {
+                          _unreadMsg.addEntries([MapEntry(room.id, 0)]);
+                        });
                       });
                     });
                   },
@@ -127,28 +130,38 @@ class _MyHomePageState extends State<MyHomePage> {
                   // minHeight: 150,
                 ),
                 child: ListView.builder(
-                  itemCount: _listRooms.length,
-                  itemBuilder: (context, index) => Card(
-                    child: ListTile(
-                      title: Row(
-                        children: [
-                          Expanded(child: Text('${_listRooms[index].name}')),
-                          IconButton(
-                              onPressed: () {
-                                _channel.sink.add(
-                                    WsMessage.unSubStreamRoomMessage(
-                                        _listRooms[index].id));
-                              },
-                              icon: Icon(Icons.remove))
-                        ],
-                      ),
-                      onTap: () {
-                        _channel.sink.add(
-                            WsMessage.streamRoomMessage(_listRooms[index].id));
-                      },
-                    ),
-                  ),
-                ),
+                    itemCount: _listRooms.length,
+                    itemBuilder: (context, index) {
+                      final room = _listRooms[index];
+                      return Card(
+                        child: ListTile(
+                          title: Row(
+                            children: [
+                              Expanded(child: Text('${room.name}')),
+                              _unreadMsg[room.id]! > 0
+                                  ? Text(
+                                      '${_unreadMsg[room.id]}',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.red),
+                                    )
+                                  : SizedBox(),
+                              IconButton(
+                                  onPressed: () {
+                                    _channel.sink.add(
+                                        WsMessage.unSubStreamRoomMessage(
+                                            room.id));
+                                  },
+                                  icon: Icon(Icons.remove))
+                            ],
+                          ),
+                          onTap: () {
+                            _channel.sink.add(WsMessage.streamRoomMessage(
+                                _listRooms[index].id));
+                          },
+                        ),
+                      );
+                    }),
               ),
 
               TextButton(
@@ -197,69 +210,20 @@ class _MyHomePageState extends State<MyHomePage> {
         });
       } else if (map['msg'] == 'changed' &&
           map['collection'] == 'stream-room-messages') {
-        final args = map['args'] as List;
+        final fields = map['fields'] as Map;
+        final eventName = fields['eventName'];
+
+        final args = fields['args'] as List;
+        print('-- args: $args');
+        final rid = args[0]['rid'];
+        setState(() {
+          int newUnread = (_unreadMsg[rid] ?? 0);
+          newUnread += args.length;
+          _unreadMsg[rid] = newUnread;
+        });
       }
     } catch (e) {
       print('--- ${e.toString()}');
-    }
-  }
-
-  Future<AuthResult?> _login(String username, String pass) async {
-    try {
-      final response = await http.post(
-        Uri.parse('http://$HOST/api/v1/login'),
-        body: {
-          'user': username,
-          'password': pass,
-        },
-      );
-
-      if (response.statusCode != 200) {
-        return null;
-      }
-
-      final json = jsonDecode(response.body) as Map<String, dynamic>;
-      if (json['status'] != 'success') {
-        return null;
-      }
-
-      final result = AuthResult.fromMap(json['data']);
-      print('-- result: ${result.toString()}');
-      return result;
-    } catch (e) {
-      print('-- Exception: ${e.toString()}');
-      return null;
-    }
-  }
-
-  Future<List<Room>> _getListRoom(String authToken, String userId) async {
-    try {
-      final response = await http.get(
-        Uri.parse('http://$HOST/api/v1/rooms.get'),
-        headers: {
-          'Content-type': 'application/json',
-          'X-Auth-Token': authToken,
-          'X-User-Id': userId
-        },
-      );
-
-      if (response.statusCode != 200) {
-        return [];
-      }
-
-      final json = jsonDecode(response.body) as Map<String, dynamic>;
-      if (json['success'] != true) {
-        return [];
-      }
-
-      List<Room> listRooms = [];
-      final update = json['update'] as List;
-      listRooms = update.map((e) => Room.fromMap(e)).toList();
-
-      return listRooms;
-    } catch (e) {
-      print('-- Exception: ${e.toString()}');
-      return [];
     }
   }
 }
