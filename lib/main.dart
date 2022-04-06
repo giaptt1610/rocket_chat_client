@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/cupertino.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:flutter/material.dart';
+import 'package:websocket_channel/test_down_file.dart';
 import 'package:websocket_channel/test_pick_files.dart';
 import 'package:websocket_channel/ws_message.dart';
 
@@ -172,6 +173,14 @@ class _MyHomePageState extends State<MyHomePage> {
                             builder: (context) => TestPickFile()));
                   },
                   child: Text('Test Pick File')),
+              TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                        context,
+                        CupertinoPageRoute(
+                            builder: (context) => TestDownloadFile()));
+                  },
+                  child: Text('Test Download File')),
             ],
           ),
         ),
