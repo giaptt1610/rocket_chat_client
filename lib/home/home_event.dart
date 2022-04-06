@@ -8,3 +8,13 @@ class LoadListRoomEvent extends HomeEvent {
   final String userId;
   LoadListRoomEvent(this.authToken, this.userId);
 }
+
+class ChannelChangedEvent extends HomeEvent {
+  final List args;
+  ChannelChangedEvent(this.args);
+}
+
+class ClearUnreadMsgEvent extends HomeEvent {
+  final String roomId;
+  ClearUnreadMsgEvent(this.roomId);
+}

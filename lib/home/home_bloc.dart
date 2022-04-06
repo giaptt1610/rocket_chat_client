@@ -24,5 +24,28 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       emit(state.copyWith(newLoading: false, rooms: listRooms));
     });
 
+    on<ChannelChangedEvent>((event, emit) {
+      Map<String, int> _unreads = {...state.unreadMsg};
+      event.args.forEach((element) {
+        final map = element as Map<String, dynamic>;
+
+        if (map['rid'] != null) {
+          int unread = state.unreadMsg[map['rid']] ?? 0;
+          unread += event.args.length;
+          _unreads[map['rid']] = unread;
+        }
+      });
+
+      emit(state.copyWith(unreads: _unreads));
+    });
+
+    on<ClearUnreadMsgEvent>((event, emit) {
+      Map<String, int> _unreads = {...state.unreadMsg};
+      if (_unreads[event.roomId] != null) {
+        _unreads[event.roomId] = 0;
+      }
+
+      emit(state.copyWith(unreads: _unreads));
+    });
   }
 }

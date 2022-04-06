@@ -12,9 +12,12 @@ import '../room.dart';
 part 'app_event.dart';
 part 'app_state.dart';
 
+typedef WsOnMessageChanged = void Function(Map<String, dynamic>);
+
 class AppBloc extends Bloc<AppEvent, AppState> {
   late WebSocketChannel _channel;
   static const WS_URL = 'ws://${Apis.HOST}/websocket';
+  List<WsOnMessageChanged> _onMessageChangedListeners = [];
 
   AppBloc() : super(AppState()) {
     _channel = WebSocketChannel.connect(
@@ -47,6 +50,10 @@ class AppBloc extends Bloc<AppEvent, AppState> {
     try {
       final Map<String, dynamic> map = jsonDecode(event);
       print(map);
+      _onMessageChangedListeners.forEach((element) {
+        element(map);
+      });
+
       if (map['msg'] == 'ping') {
         _channel.sink.add(WsMessage.pongMsg());
       } else if (map['msg'] == 'connected') {
@@ -58,15 +65,21 @@ class AppBloc extends Bloc<AppEvent, AppState> {
         final args = fields['args'] as List;
         print('-- args: $args');
         final rid = args[0]['rid'];
-        // setState(() {
-        //   int newUnread = (_unreadMsg[rid] ?? 0);
-        //   newUnread += args.length;
-        //   _unreadMsg[rid] = newUnread;
-        // });
+
+        /// update total unread msg
+
+        // int newUnread = ([rid] ?? 0);
+        // newUnread += args.length;
+        // _unreadMsg[rid] = newUnread;
+        emit(state);
       }
     } catch (e) {
       print('--- ${e.toString()}');
     }
+  }
+
+  void addMessageChangeListener(WsOnMessageChanged listener) {
+    _onMessageChangedListeners.add(listener);
   }
 
   @override
