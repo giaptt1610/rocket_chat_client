@@ -10,7 +10,7 @@ class Room {
   final String t;
 
   // room name
-  final String name;
+  final String? name;
   final String? fname;
 
   // the room creator
@@ -25,16 +25,21 @@ class Room {
 
   final String? updatedAt;
 
+  final List<String>? usernames;
+  final int? usersCount;
+
   Room({
     this.id = '',
     this.t = '',
-    this.name = '',
+    this.name,
     this.fname,
     this.u,
     this.topic,
     this.muted,
     this.ts,
     this.updatedAt,
+    this.usernames,
+    this.usersCount,
   });
 
   Room.fromMap(Map<String, dynamic> map)
@@ -46,7 +51,11 @@ class Room {
         topic = map['topic'],
         muted = map['muted'],
         ts = map['ts'],
-        updatedAt = map['_updatedAt'];
+        updatedAt = map['_updatedAt'],
+        usernames = map['usernames'] != null
+            ? (map['usernames'] as List).map((e) => e.toString()).toList()
+            : null,
+        usersCount = map['usersCount'];
 
   Map<String, dynamic> toMap() => {
         '_id': id,
@@ -57,4 +66,10 @@ class Room {
         'ts': ts,
         '_updatedAt': updatedAt,
       };
+
+  String? get dmName {
+    if (usernames != null) {
+      return usernames![0];
+    }
+  }
 }

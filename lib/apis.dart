@@ -5,7 +5,8 @@ import 'auth_result.dart';
 import 'room.dart';
 
 class Apis {
-  static const HOST = 'localhost:3000';
+  /// change to localhost if you have Rocket Chat local server
+  static const HOST = '10.1.38.212:3000';
   static Future<AuthResult?> login(String username, String pass) async {
     try {
       final response = await http.post(
