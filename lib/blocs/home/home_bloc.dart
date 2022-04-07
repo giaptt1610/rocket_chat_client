@@ -1,9 +1,9 @@
 import 'package:bloc/bloc.dart';
 import 'package:meta/meta.dart';
-import 'package:websocket_channel/app/app_bloc.dart';
 
-import '../apis.dart';
-import '../room.dart';
+import '../app/app_bloc.dart';
+import '../../common/apis.dart';
+import '../../models/room.dart';
 
 part 'home_event.dart';
 part 'home_state.dart';

@@ -1,7 +1,8 @@
 import 'package:badges/badges.dart';
 import 'package:flutter/material.dart';
+import '../models/room.dart';
 
-import 'room.dart';
+
 
 class ChannelWidget extends StatelessWidget {
   final Room channel;

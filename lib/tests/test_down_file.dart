@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:open_file/open_file.dart';
-import 'file_helper.dart';
+import '../common/file_helper.dart';
 
 class TestDownloadFile extends StatefulWidget {
   TestDownloadFile({Key? key}) : super(key: key);

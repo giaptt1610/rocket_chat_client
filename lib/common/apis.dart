@@ -1,12 +1,12 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
-import 'auth_result.dart';
-import 'room.dart';
+import '../models/auth_result.dart';
+import '../models/room.dart';
 
 class Apis {
   /// change to localhost if you have Rocket Chat local server
-  static const HOST = '10.1.38.212:3000';
+  static const HOST = 'localhost:3000';
   static Future<AuthResult?> login(String username, String pass) async {
     try {
       final response = await http.post(

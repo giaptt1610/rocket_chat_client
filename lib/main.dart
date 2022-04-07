@@ -1,14 +1,17 @@
+import 'dart:async';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/material.dart';
-import 'package:websocket_channel/app/app_bloc.dart';
-import 'package:websocket_channel/channel_widget.dart';
-import 'package:websocket_channel/home/home_bloc.dart';
-import 'package:websocket_channel/test_down_file.dart';
-import 'package:websocket_channel/test_pick_files.dart';
 
-import 'apis.dart';
-import 'auth_result.dart';
+import 'blocs/app/app_bloc.dart';
+import 'blocs/home/home_bloc.dart';
+import 'widgets/channel_widget.dart';
+
+import 'common/apis.dart';
+import 'models/auth_result.dart';
+import 'tests/test_down_file.dart';
+import 'tests/test_pick_files.dart';
 
 void main() => runApp(const MyApp());
 
@@ -44,10 +47,11 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   final TextEditingController _controller = TextEditingController();
+  late StreamSubscription _wsEventSub;
 
   AuthResult? authResult;
-  final _userName = 'giaptt';
-  final _pass = 'Test123456';
+  final _userName = 'giaptt_admin';
+  final _pass = '576173987';
 
   late HomeBloc _homeBloc;
 
@@ -70,7 +74,11 @@ class _MyHomePageState extends State<MyHomePage> {
     super.initState();
     final _appBloc = context.read<AppBloc>();
     _homeBloc = HomeBloc(_appBloc);
-    _appBloc.addMessageChangeListener(_onWsMessageReceived);
+    _wsEventSub = _appBloc.wsEventStream.listen((event) {
+      _onWsMessageReceived(event as Map<String, dynamic>);
+    });
+
+    // _appBloc.addMessageChangeListener(_onWsMessageReceived);
 
     Apis.login(_userName, _pass).then((value) {
       if (value != null) {
@@ -80,6 +88,9 @@ class _MyHomePageState extends State<MyHomePage> {
         context.read<AppBloc>().add(AuthenticatedEvent(value));
         context.read<AppBloc>().add(WsLoginEvent(authResult!.authToken));
         _homeBloc.add(LoadListRoomEvent(value.authToken, value.userId));
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('username/pass maybe wrong!')));
       }
     });
   }

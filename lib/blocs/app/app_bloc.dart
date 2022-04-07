@@ -1,23 +1,22 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:bloc/bloc.dart';
 import 'package:meta/meta.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
-import 'package:websocket_channel/apis.dart';
-import 'package:websocket_channel/auth_result.dart';
-
-import '../ws_message.dart';
-import '../room.dart';
+import '../../common/apis.dart';
+import '../../common/ws_message.dart';
+import '../../models/auth_result.dart';
+import '../../models/room.dart';
 
 part 'app_event.dart';
 part 'app_state.dart';
 
-typedef WsOnMessageChanged = void Function(Map<String, dynamic>);
-
 class AppBloc extends Bloc<AppEvent, AppState> {
   late WebSocketChannel _channel;
   static const WS_URL = 'ws://${Apis.HOST}/websocket';
-  List<WsOnMessageChanged> _onMessageChangedListeners = [];
+
+  final StreamController _wsStreamController = StreamController.broadcast();
 
   AppBloc() : super(AppState()) {
     _channel = WebSocketChannel.connect(
@@ -50,9 +49,7 @@ class AppBloc extends Bloc<AppEvent, AppState> {
     try {
       final Map<String, dynamic> map = jsonDecode(event);
       print(map);
-      _onMessageChangedListeners.forEach((element) {
-        element(map);
-      });
+      _wsStreamController.sink.add(map);
 
       if (map['msg'] == 'ping') {
         _channel.sink.add(WsMessage.pongMsg());
@@ -78,12 +75,11 @@ class AppBloc extends Bloc<AppEvent, AppState> {
     }
   }
 
-  void addMessageChangeListener(WsOnMessageChanged listener) {
-    _onMessageChangedListeners.add(listener);
-  }
+  Stream get wsEventStream => _wsStreamController.stream;
 
   @override
   Future<void> close() {
+    _wsStreamController.close();
     _channel.sink.close();
     return super.close();
   }

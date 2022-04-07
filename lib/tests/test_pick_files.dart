@@ -4,7 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-import 'file_helper.dart';
+import '../common/file_helper.dart';
 
 class TestPickFile extends StatefulWidget {
   TestPickFile({Key? key}) : super(key: key);
